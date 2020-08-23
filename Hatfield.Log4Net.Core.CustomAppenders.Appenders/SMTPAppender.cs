@@ -22,7 +22,7 @@ using log4net.Core;
 namespace Hatfield.Log4Net.Core.CustomAppenders.Appenders
 {
     /// <summary>
-    /// https://github.com/apache/logging-log4net/blob/master/src/Appender/SmtpAppender.cs
+    /// https://github.com/HatfieldConsultants/Log4Net.Core.CustomAppenders
     /// </summary>
     public class SMTPAppender : BufferingAppenderSkeleton
     {
@@ -30,21 +30,34 @@ namespace Hatfield.Log4Net.Core.CustomAppenders.Appenders
         public string From { get; set; }
         public string Subject { get; set; }
         public string SmtpHost { get; set; }
-        public string Port { get; set; }
-
+        public int Port { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+        public bool EnableSsl { get; set; }
+        
         protected void SendEmail(string messageBody)
         {
-            SmtpClient client = new SmtpClient(SmtpHost);
-            client.UseDefaultCredentials = false;
-            client.Port = int.Parse(Port);
             using (MailMessage mailMessage = new MailMessage())
             {
                 mailMessage.From = new MailAddress(From);
                 mailMessage.To.Add(To);
                 mailMessage.Body = messageBody;
                 mailMessage.Subject = Subject;
-                client.Send(mailMessage);
-            }
+
+
+                using (SmtpClient smtp = new SmtpClient(SmtpHost, Port))
+                {
+                    //gmail setting: must be on 
+                    //https://myaccount.google.com/lesssecureapps
+
+                    smtp.UseDefaultCredentials = false;
+                    if (!string.IsNullOrEmpty(UserName) && !string.IsNullOrEmpty(Password))
+                        smtp.Credentials = new NetworkCredential(UserName, Password);
+
+                    smtp.EnableSsl = EnableSsl;
+                    smtp.Send(mailMessage);
+                }
+            }          
         }
 
         protected override bool RequiresLayout => true;
